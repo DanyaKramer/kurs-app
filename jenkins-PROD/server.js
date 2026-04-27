@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3001;
 
 // Настройка Middleware
 app.use(express.json());
-app.use('/api', express.static(path.join(__dirname, 'public')));
+app.use('/auth', express.static(path.join(__dirname, 'public')));
 
 // Инициализация БД в оперативной памяти (для демонстрации)
 const db = new sqlite3.Database(':memory:');
