@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_PORT = '3001'
+        IMAGE_NAME = 'jenkins-node-demo'
+        CONTAINER_NAME = 'test-con'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Скачивание всего репозитория в корневую рабочую область
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                // Переход в подпапку перед выполнением команд
+                dir('jenkins-PROD') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('jenkins-PROD') {
+                    sh 'npm test'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir('jenkins-PROD') {
+                    // Сборка образа на основе Dockerfile внутри папки jenkins-PROD
+                    sh "docker build -t ${IMAGE_NAME} ."
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // Запуск в Docker 
+                sh "docker stop ${CONTAINER_NAME} || true"
+                sh "docker rm ${CONTAINER_NAME} || true"
+                
+                // Запуск контейнера с пробросом порта
+                sh "docker run -d -p ${APP_PORT}:3001 --name ${CONTAINER_NAME} ${IMAGE_NAME}"
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Сборка и деплой успешно завершены.'
+        }
+        failure {
+            echo 'Сборка завершилась ошибкой. Проверьте логи.'
+        }
+    }
+}
